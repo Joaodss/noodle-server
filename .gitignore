@@ -1,0 +1,5 @@
+*.auto.tfvars
+.DS_Store
+.terraform*
+application_default_credentials.json
+sensitive.auto.tfvars

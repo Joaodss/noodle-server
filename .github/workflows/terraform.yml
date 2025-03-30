@@ -1,0 +1,109 @@
+name: 'Terraform'
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-plan:
+    name: 'Terraform Plan'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      
+    - name: Create credentials file
+      run: |
+        echo '${{ secrets.GOOGLE_CREDENTIALS }}' > application_default_credentials.json
+
+    - name: Create sensitive.auto.tfvars
+      run: |
+        cat > sensitive.auto.tfvars <<EOL
+        gcp_project                     = "${{ secrets.GCP_PROJECT }}"
+        gcp_project_region              = "${{ secrets.GCP_REGION }}"
+        gcp_project_zone                = "${{ secrets.GCP_ZONE }}"
+        gcp_billing_project             = "${{ secrets.GCP_BILLING_PROJECT }}"
+        gcp_billing_account_name        = "${{ secrets.GCP_BILLING_ACCOUNT_NAME }}"
+        gcp_billing_alert_currency_code = "${{ secrets.GCP_BILLING_CURRENCY }}"
+        gcp_billing_alert_amount        = "${{ secrets.GCP_BILLING_AMOUNT }}"
+        access_credentials              = "./application_default_credentials.json"
+        cloudflare_api_token            = "${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        actual_subdomain                = "${{ secrets.ACTUAL_SUBDOMAIN }}"
+        actual_server_image_version_tag = "${{ secrets.ACTUAL_SERVER_VERSION }}"
+        EOL
+
+    - name: Terraform Init
+      run: terraform init
+      env:
+        TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+
+    - name: Terraform Plan
+      run: terraform plan
+      env:
+        TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}  
+
+  terraform-apply:
+    name: 'Terraform Apply'
+    runs-on: ubuntu-latest
+    environment: production
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      
+    - name: Create credentials file
+      run: |
+        echo '${{ secrets.GOOGLE_CREDENTIALS }}' > application_default_credentials.json
+
+    - name: Create sensitive.auto.tfvars
+      run: |
+        cat > sensitive.auto.tfvars <<EOL
+        gcp_project                     = "${{ secrets.GCP_PROJECT }}"
+        gcp_project_region              = "${{ secrets.GCP_REGION }}"
+        gcp_project_zone                = "${{ secrets.GCP_ZONE }}"
+        gcp_billing_project             = "${{ secrets.GCP_BILLING_PROJECT }}"
+        gcp_billing_account_name        = "${{ secrets.GCP_BILLING_ACCOUNT_NAME }}"
+        gcp_billing_alert_currency_code = "${{ secrets.GCP_BILLING_CURRENCY }}"
+        gcp_billing_alert_amount        = "${{ secrets.GCP_BILLING_AMOUNT }}"
+        access_credentials              = "./application_default_credentials.json"
+        cloudflare_api_token            = "${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        actual_subdomain                = "${{ secrets.ACTUAL_SUBDOMAIN }}"
+        actual_server_image_version_tag = "${{ secrets.ACTUAL_SERVER_VERSION }}"
+        EOL
+
+    - name: Terraform Init
+      run: terraform init
+      env:
+        TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+
+    - name: Terraform Plan
+      run: terraform plan
+      env:
+        TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
+
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: terraform apply -auto-approve
+      env:
+        TF_TOKEN_app_terraform_io: ${{ secrets.TF_API_TOKEN }}
