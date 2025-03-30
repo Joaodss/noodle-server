@@ -53,7 +53,7 @@ jobs:
       run: terraform plan -out=tfplan
 
     - name: Upload Terraform Plan
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: tfplan
         path: tfplan
@@ -102,7 +102,7 @@ jobs:
       run: terraform init
 
     - name: Download Terraform Plan
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: tfplan
 
