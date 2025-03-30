@@ -60,8 +60,7 @@ jobs:
       uses: trstringer/manual-approval@v1
       with:
         secret: ${{ secrets.GITHUB_TOKEN }}
-        approvers: "Joaodss"
-        minimum-approvals: 1
+        approvers: Joaodss
         timeout-minutes: 60
 
     - name: Terraform Apply
