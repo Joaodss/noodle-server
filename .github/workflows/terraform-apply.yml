@@ -2,6 +2,8 @@ name: 'Terraform Apply'
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ "master" ]
 
 permissions:
   contents: read
