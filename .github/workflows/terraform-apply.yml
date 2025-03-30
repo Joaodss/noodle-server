@@ -61,7 +61,7 @@ jobs:
 
   terraform-apply:
     name: 'Terraform Apply'
-    needs: plan
+    needs: terraform-plan
     runs-on: ubuntu-latest
     environment: production
 
