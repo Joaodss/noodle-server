@@ -37,12 +37,12 @@ jobs:
         gcp_project_zone                = "${{ secrets.GCP_ZONE }}"
         gcp_billing_project             = "${{ secrets.GCP_BILLING_PROJECT }}"
         gcp_billing_account_name        = "${{ secrets.GCP_BILLING_ACCOUNT_NAME }}"
-        gcp_billing_alert_currency_code = "${{ secrets.GCP_BILLING_CURRENCY }}"
-        gcp_billing_alert_amount        = "${{ secrets.GCP_BILLING_AMOUNT }}"
+        gcp_billing_alert_currency_code = "${{ vars.GCP_BILLING_CURRENCY }}"
+        gcp_billing_alert_amount        = "${{ vars.GCP_BILLING_AMOUNT }}"
         access_credentials              = "./application_default_credentials.json"
         cloudflare_api_token            = "${{ secrets.CLOUDFLARE_API_TOKEN }}"
         actual_subdomain                = "${{ secrets.ACTUAL_SUBDOMAIN }}"
-        actual_server_image_version_tag = "${{ secrets.ACTUAL_SERVER_VERSION }}"
+        actual_server_image_version_tag = "${{ vars.ACTUAL_SERVER_VERSION }}"
         EOL
 
     - name: Terraform Init
