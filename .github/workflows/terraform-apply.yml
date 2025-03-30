@@ -55,7 +55,7 @@ jobs:
       run: terraform plan -out=tfplan
 
     - name: Wait for approval
-      uses: your-github-user/manual-approval@your-dev-branch
+      uses: trstringer/manual-approval@v1
       with:
         minimum-approvals: 1
         timeout-minutes: 60
