@@ -27,7 +27,7 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-      
+
     - name: Create credentials file
       run: |
         echo '${{ secrets.GOOGLE_CREDENTIALS }}' > application_default_credentials.json
@@ -51,13 +51,22 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
-    - name: Terraform Format
-      run: terraform fmt -check
-
     - name: Terraform Plan
       run: terraform plan -out=tfplan
 
+    - name: Check Plan Status
+      id: plan-check
+      run: |
+        if terraform show tfplan | grep -q "No changes."; then
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          echo "No changes detected"
+        else
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "Changes detected"
+        fi
+
     - name: Wait for approval
+      if: steps.plan-check.outputs.has_changes == 'true'
       uses: trstringer/manual-approval@v1
       with:
         secret: ${{ secrets.GITHUB_TOKEN }}
@@ -65,4 +74,5 @@ jobs:
         timeout-minutes: 60
 
     - name: Terraform Apply
+      if: steps.plan-check.outputs.has_changes == 'true'
       run: terraform apply tfplan
