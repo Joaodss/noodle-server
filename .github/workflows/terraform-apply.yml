@@ -41,7 +41,7 @@ jobs:
         gcp_billing_alert_amount        = "${{ vars.GCP_BILLING_AMOUNT }}"
         access_credentials              = "./application_default_credentials.json"
         cloudflare_api_token            = "${{ secrets.CLOUDFLARE_API_TOKEN }}"
-        actual_subdomain                = "${{ secrets.ACTUAL_SUBDOMAIN }}"
+        actual_subdomain                = "${{ vars.ACTUAL_SUBDOMAIN }}"
         actual_server_image_version_tag = "${{ vars.ACTUAL_SERVER_VERSION }}"
         EOL
 
