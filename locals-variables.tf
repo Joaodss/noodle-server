@@ -12,3 +12,8 @@ variable "actual_server_image_version_tag" {
   type        = string
   description = "Actual Server version tag to use"
 }
+
+variable "actual_tasks_image_version_tag" {
+  type        = string
+  description = "Actual Tasks version tag to use"
+}

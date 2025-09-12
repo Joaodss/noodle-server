@@ -122,6 +122,53 @@ ENDCADDY
         [Install]
         WantedBy=multi-user.target
         EOT4
+    },
+    {
+      path        = "/etc/systemd/system/actualtasks.service"
+      permissions = "0644"
+      owner       = "root"
+      content     = <<-EOT5
+        [Unit]
+        Description=Start Actual Tasks
+        After=network-online.target docker.service actual.service
+        Requires=docker.service actual.service
+        RequiresMountsFor=/mnt/disks/data
+
+        [Service]    
+        ExecStart=/usr/bin/docker run --rm \
+          --network custom-bridge \
+          --name=actualtasks \
+          -e ACTUAL_SERVER_URL=${var.actual_tasks_config.actual.server_url} \
+          -e ACTUAL_SERVER_PASSWORD=${var.actual_tasks_config.actual.server_password} \
+          -e ACTUAL_SYNC_ID=${var.actual_tasks_config.actual.sync_id} \
+          -e ACTUAL_FILE_PASSWORD=${var.actual_tasks_config.actual.file_password} \
+          -e ENABLE_PAYEE_RENAME=${var.actual_tasks_config.features.payee_rename.is_enabled} \ 
+          -e PAYEE_REGEX_MATCH=${var.actual_tasks_config.features.payee_rename.regex_match} \
+          -e ENABLE_INTEREST_CALCULATION=${var.actual_tasks_config.features.interest_calculation.is_enabled} \
+          -e INTEREST_RATE=${var.actual_tasks_config.features.interest_calculation.rate} \
+          -e MORTGAGE_PAYEE_ID=${var.actual_tasks_config.features.interest_calculation.payee_id} \
+          -e MAIN_ACCOUNT_ID=${var.actual_tasks_config.features.interest_calculation.main_account_id} \
+          -e MORTGAGE_ACCOUNT_ID=${var.actual_tasks_config.features.interest_calculation.mortage_account_id} \
+          -e ENABLE_GHOSTFOLIO_SYNC=${var.actual_tasks_config.features.ghostfolio.is_enabled} \
+          -e GHOSTFOLIO_ACCOUNT=${var.actual_tasks_config.features.ghostfolio.account} \
+          -e GHOSTFOLIO_ACTUAL_ACCOUNT=${var.actual_tasks_config.features.ghostfolio.actual_account} \
+          -e GHOSTFOLIO_ACTUAL_PAYEE_NAME=${var.actual_tasks_config.features.ghostfolio.payee_name} \
+          -e GHOSTFOLIO_SERVER_URL=${var.actual_tasks_config.features.ghostfolio.server_url} \
+          -e GHOSTFOLIO_TOKEN=${var.actual_tasks_config.features.ghostfolio.token} \
+          -e ENABLE_HOLD_INCOME_FOR_NEXT_MONTH=${var.actual_tasks_config.features.hold_income_for_next_month.is_enabled} \
+          -e ENABLE_BANK_SYNC=${var.actual_tasks_config.features.bank_sync.is_enabled} \
+          -e CRON_EXPRESSION=${var.actual_tasks_config.cron_expression} \
+          rodriguestiago0/actualtasks:${var.actual_tasks_image_version_tag}
+
+        ExecStop=/usr/bin/docker stop actualtasks
+        ExecStopPost=/usr/bin/docker rm actualtasks
+        Restart=unless-stopped
+        TimeoutStartSec=0
+        TimeoutStopSec=5
+
+        [Install]
+        WantedBy=multi-user.target
+        EOT5
     }
   ]
 
@@ -136,8 +183,10 @@ ENDCADDY
     "systemctl daemon-reload",
     "systemctl enable caddy.service",
     "systemctl enable actual.service",
+    "systemctl enable actualtasks.service",
     "systemctl start caddy.service",
-    "systemctl start actual.service"
+    "systemctl start actual.service",
+    "systemctl start actualtasks.service"
   ]
 })}
   EOT

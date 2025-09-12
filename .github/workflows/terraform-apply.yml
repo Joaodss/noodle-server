@@ -46,6 +46,43 @@ jobs:
         cloudflare_api_token            = "${{ secrets.CLOUDFLARE_API_TOKEN }}"
         actual_subdomain                = "${{ vars.ACTUAL_SUBDOMAIN }}"
         actual_server_image_version_tag = "${{ vars.ACTUAL_SERVER_VERSION }}"
+        actual_tasks_image_version_tag = "${{ vars.ACTUAL_TASKS_VERSION }}"
+        actual_tasks_config = {
+          cron_expression = "${{ vars.ACTUAL_TASKS_CRON }}"
+          actual = {
+            server_url      = "${{ secrets.ACTUAL_SERVER_URL }}"
+            server_password = "${{ secrets.ACTUAL_SERVER_PASSWORD }}"
+            sync_id         = "${{ secrets.ACTUAL_SYNC_ID }}"
+            file_password   = "${{ secrets.ACTUAL_FILE_PASSWORD }}"
+          }
+          features = {
+            payee_rename = {
+              is_enabled  = true
+              regex_match = "${{ vars.ACTUAL_PAYEE_REGEX }}"
+            }
+            interest_calculation = {
+              is_enabled         = false
+              rate               = ""
+              payee_id           = ""     
+              main_account_id    = ""
+              mortage_account_id = ""
+            }
+            ghostfolio = {
+              is_enabled     = false
+              account        = ""
+              actual_account = ""
+              payee_name     = ""
+              server_url     = ""
+              token          = ""
+            }
+            hold_income_for_next_month = {
+              is_enabled = false
+            }
+            bank_sync = {
+              is_enabled = true
+            }
+          }
+        }
         EOL
 
     - name: Terraform Init
