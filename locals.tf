@@ -138,13 +138,13 @@ ENDCADDY
         ExecStart=/usr/bin/docker run --rm \
           --network custom-bridge \
           --name=actualtasks \
-          --env CRON_EXPRESSION="${var.actual_tasks_config.cron_expression}" \
-          --env ACTUAL_SERVER_URL="${var.actual_tasks_config.actual.server_url}" \
-          --env ACTUAL_SERVER_PASSWORD="${var.actual_tasks_config.actual.server_password}" \
-          --env ACTUAL_SYNC_ID="${var.actual_tasks_config.actual.sync_id}" \
-          --env ACTUAL_FILE_PASSWORD="${var.actual_tasks_config.actual.file_password}" \
+          --env CRON_EXPRESSION=${var.actual_tasks_config.cron_expression} \
+          --env ACTUAL_SERVER_URL=${var.actual_tasks_config.actual.server_url} \
+          --env ACTUAL_SERVER_PASSWORD=${var.actual_tasks_config.actual.server_password} \
+          --env ACTUAL_SYNC_ID=${var.actual_tasks_config.actual.sync_id} \
+          --env ACTUAL_FILE_PASSWORD=${var.actual_tasks_config.actual.file_password} \
           --env ENABLE_PAYEE_RENAME=${var.actual_tasks_config.features.payee_rename.is_enabled} \
-          --env PAYEE_REGEX_MATCH="${var.actual_tasks_config.features.payee_rename.regex_match}" \
+          --env PAYEE_REGEX_MATCH=${var.actual_tasks_config.features.payee_rename.regex_match} \
           --env ENABLE_INTEREST_CALCULATION=${var.actual_tasks_config.features.interest_calculation.is_enabled} \
           --env ENABLE_GHOSTFOLIO_SYNC=${var.actual_tasks_config.features.ghostfolio.is_enabled} \
           --env ENABLE_HOLD_INCOME_FOR_NEXT_MONTH=${var.actual_tasks_config.features.hold_income_for_next_month.is_enabled} \
