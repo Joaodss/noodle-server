@@ -182,7 +182,6 @@ ENDCADDY
           --env ENCRYPTION_PASSWORDS="${var.actual_auto_sync_config.file_passwords}" \
           --env CRON_SCHEDULE="${var.actual_auto_sync_config.cron_schedule}" \
           --env LOG_LEVEL="${var.actual_auto_sync_config.log_level}" \
-          --env TIMEZONE="${var.actual_auto_sync_config.timezone}" \
           --env RUN_ON_START="${var.actual_auto_sync_config.run_on_start}" \
           seriouslag/actual-auto-sync:${var.actual_auto_sync_image_version_tag}
 
