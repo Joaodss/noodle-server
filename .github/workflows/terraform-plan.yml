@@ -77,7 +77,7 @@ jobs:
               is_enabled = false
             }
             bank_sync = {
-              is_enabled = true
+              is_enabled = false
             }
           }
         }
