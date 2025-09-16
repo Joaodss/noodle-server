@@ -124,7 +124,7 @@ ENDCADDY
         EOT4
     },
     {
-      path        = "/etc/systemd/system/actualtasks.service"
+      path        = "/etc/systemd/system/actual-tasks.service"
       permissions = "0644"
       owner       = "root"
       content     = <<-EOT5
@@ -137,7 +137,7 @@ ENDCADDY
         [Service]    
         ExecStart=/usr/bin/docker run --rm \
           --network custom-bridge \
-          --name=actualtasks \
+          --name=actual-tasks \
           --env CRON_EXPRESSION="${var.actual_tasks_config.cron_expression}" \
           --env ACTUAL_SERVER_URL=${var.actual_tasks_config.actual.server_url} \
           --env ACTUAL_SERVER_PASSWORD="${var.actual_tasks_config.actual.server_password}" \
@@ -151,8 +151,8 @@ ENDCADDY
           --env ENABLE_BANK_SYNC=${var.actual_tasks_config.features.bank_sync.is_enabled} \
           rodriguestiago0/actualtasks:${var.actual_tasks_image_version_tag}
 
-        ExecStop=/usr/bin/docker stop actualtasks
-        ExecStopPost=/usr/bin/docker rm actualtasks
+        ExecStop=/usr/bin/docker stop actual-tasks
+        ExecStopPost=/usr/bin/docker rm actual-tasks
         Restart=unless-stopped
         TimeoutStartSec=0
         TimeoutStopSec=5
@@ -160,6 +160,41 @@ ENDCADDY
         [Install]
         WantedBy=multi-user.target
         EOT5
+    },
+    {
+      path        = "/etc/systemd/system/actual-auto-sync.service"
+      permissions = "0644"
+      owner       = "root"
+      content     = <<-EOT6
+        [Unit]
+        Description=Start Actual Auto Sync
+        After=network-online.target docker.service actual.service
+        Requires=docker.service actual.service
+        RequiresMountsFor=/mnt/disks/data
+
+        [Service]    
+        ExecStart=/usr/bin/docker run --rm \
+          --network custom-bridge \
+          --name=actual-auto-sync \
+          --env ACTUAL_SERVER_URL="${var.actual_auto_sync_config.server_url}" \
+          --env ACTUAL_SERVER_PASSWORD="${var.actual_auto_sync_config.server_password}" \
+          --env ACTUAL_BUDGET_SYNC_IDS="${var.actual_auto_sync_config.sync_ids}" \
+          --env ENCRYPTION_PASSWORDS="${var.actual_auto_sync_config.file_passwords}" \
+          --env CRON_SCHEDULE="${var.actual_auto_sync_config.cron_schedule}" \
+          --env LOG_LEVEL="${var.actual_auto_sync_config.log_level}" \
+          --env TIMEZONE="${var.actual_auto_sync_config.timezone}" \
+          --env RUN_ON_START="${var.actual_auto_sync_config.run_on_start}" \
+          seriouslag/actual-auto-sync:${var.actual_auto_sync_image_version_tag}
+
+        ExecStop=/usr/bin/docker stop actual-auto-sync
+        ExecStopPost=/usr/bin/docker rm actual-auto-sync
+        Restart=unless-stopped
+        TimeoutStartSec=0
+        TimeoutStopSec=5
+
+        [Install]
+        WantedBy=multi-user.target
+        EOT6
     }
   ]
 
@@ -174,10 +209,12 @@ ENDCADDY
     "systemctl daemon-reload",
     "systemctl enable caddy.service",
     "systemctl enable actual.service",
-    "systemctl enable actualtasks.service",
+    "systemctl enable actual-auto-sync.service",
+    "systemctl enable actual-tasks.service",
     "systemctl start caddy.service",
     "systemctl start actual.service",
-    "systemctl start actualtasks.service"
+    "systemctl start actual-auto-sync.service",
+    "systemctl start actual-tasks.service"
   ]
 })}
   EOT

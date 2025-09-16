@@ -17,3 +17,8 @@ variable "actual_tasks_image_version_tag" {
   type        = string
   description = "Actual Tasks version tag to use"
 }
+
+variable "actual_auto_sync_image_version_tag" {
+  type        = string
+  description = "Actual Auto Sync version tag to use"
+}

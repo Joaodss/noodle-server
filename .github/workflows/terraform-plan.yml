@@ -33,18 +33,19 @@ jobs:
     - name: Create sensitive.auto.tfvars
       run: |
         cat > sensitive.auto.tfvars <<EOL
-        gcp_project                     = "${{ secrets.GCP_PROJECT }}"
-        gcp_project_region              = "${{ secrets.GCP_REGION }}"
-        gcp_project_zone                = "${{ secrets.GCP_ZONE }}"
-        gcp_billing_project             = "${{ secrets.GCP_BILLING_PROJECT }}"
-        gcp_billing_account_name        = "${{ secrets.GCP_BILLING_ACCOUNT_NAME }}"
-        gcp_billing_alert_currency_code = "${{ vars.GCP_BILLING_CURRENCY }}"
-        gcp_billing_alert_amount        = "${{ vars.GCP_BILLING_AMOUNT }}"
-        access_credentials              = "./application_default_credentials.json"
-        cloudflare_api_token            = "${{ secrets.CLOUDFLARE_API_TOKEN }}"
-        actual_subdomain                = "${{ vars.ACTUAL_SUBDOMAIN }}"
-        actual_server_image_version_tag = "${{ vars.ACTUAL_SERVER_VERSION }}"
-        actual_tasks_image_version_tag = "${{ vars.ACTUAL_TASKS_VERSION }}"
+        gcp_project                        = "${{ secrets.GCP_PROJECT }}"
+        gcp_project_region                 = "${{ secrets.GCP_REGION }}"
+        gcp_project_zone                   = "${{ secrets.GCP_ZONE }}"
+        gcp_billing_project                = "${{ secrets.GCP_BILLING_PROJECT }}"
+        gcp_billing_account_name           = "${{ secrets.GCP_BILLING_ACCOUNT_NAME }}"
+        gcp_billing_alert_currency_code    = "${{ vars.GCP_BILLING_CURRENCY }}"
+        gcp_billing_alert_amount           = "${{ vars.GCP_BILLING_AMOUNT }}"
+        access_credentials                 = "./application_default_credentials.json"
+        cloudflare_api_token               = "${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        actual_subdomain                   = "${{ vars.ACTUAL_SUBDOMAIN }}"
+        actual_server_image_version_tag    = "${{ vars.ACTUAL_SERVER_VERSION }}"
+        actual_tasks_image_version_tag     = "${{ vars.ACTUAL_TASKS_VERSION }}"
+        actual_auto_sync_image_version_tag = "${{ vars.ACTUAL_AUTO_SYNC_VERSION }}"
         actual_tasks_config = {
           cron_expression = "${{ vars.ACTUAL_TASKS_CRON }}"
           actual = {
@@ -80,6 +81,15 @@ jobs:
               is_enabled = false
             }
           }
+        }
+        actual_auto_sync_config = {
+          server_url      = "${{ vars.ACTUAL_SERVER_URL }}"
+          server_password = "${{ secrets.ACTUAL_SERVER_PASSWORD }}"
+          sync_ids        = "${{ secrets.ACTUAL_SYNC_ID }}"
+          file_passwords  = "${{ secrets.ACTUAL_FILE_PASSWORD }}"
+          cron_schedule   = "${{ vars.ACTUAL_AUTO_SYNC_CRON }}"
+          log_level       = "info"
+          run_on_start    = true
         }
         EOL
 
