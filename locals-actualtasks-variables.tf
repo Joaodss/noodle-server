@@ -46,7 +46,6 @@ variable "actual_auto_sync_config" {
     file_passwords  = string
     cron_schedule   = string
     log_level       = string
-    timezone        = string
     run_on_start    = bool
   })
   description = "Configuration for Actual Auto Sync service"
