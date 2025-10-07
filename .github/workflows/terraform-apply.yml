@@ -59,7 +59,7 @@ jobs:
           features = {
             payee_rename = {
               is_enabled  = true
-              regex_match = '${{ vars.ACTUAL_PAYEE_REGEX }}'
+              regex_match = "${{ vars.ACTUAL_PAYEE_REGEX }}"
             }
             interest_calculation = {
               is_enabled         = false
