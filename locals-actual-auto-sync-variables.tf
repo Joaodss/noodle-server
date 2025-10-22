@@ -10,3 +10,8 @@ variable "actual_auto_sync_config" {
   })
   description = "Configuration for Actual Auto Sync service"
 }
+
+variable "actual_auto_sync_image_version_tag" {
+  type        = string
+  description = "Actual Auto Sync version tag to use"
+}
