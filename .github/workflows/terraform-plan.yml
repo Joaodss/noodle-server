@@ -95,6 +95,7 @@ jobs:
         mealie_image_version_tag = "${{ vars.MEALIE_VERSION }}"
         mealie_config = {
           timezone = "${{ vars.MEALIE_TIME_ZONE }}"
+          base_url = "${{ vars.MEALIE_URL }}"
         }
         EOL
 

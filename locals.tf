@@ -220,7 +220,7 @@ ENDCADDY
           --mount 'type=bind,source=/mnt/disks/data/mealie-data,target=/app/data' \
           --name=mealie \
           -e TZ="${var.mealie_config.timezone}" \
-          -e BASE_URL="${var.mealie_subdomain}" \
+          -e BASE_URL="${var.mealie_config.base_url}" \
           ghcr.io/mealie-recipes/mealie:${var.mealie_image_version_tag}
 
         ExecStop=/usr/bin/docker stop mealie

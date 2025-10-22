@@ -11,6 +11,7 @@ variable "mealie_image_version_tag" {
 variable "mealie_config" {
   type = object({
     timezone = string
+    base_url = string
   })
   description = "Configuration for Mealie service"
 }
