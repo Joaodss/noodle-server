@@ -33,6 +33,7 @@ locals {
         mkdir -p $MOUNT_DIR/caddy/data
         mkdir -p $MOUNT_DIR/caddy/config
         mkdir -p $MOUNT_DIR/actual-data
+        mkdir -p $MOUNT_DIR/mealie-data
 
         echo "Setting permissions..."
         chown -R root:root $MOUNT_DIR
@@ -55,6 +56,13 @@ locals {
 ${var.actual_subdomain} {
     encode gzip zstd
     reverse_proxy actual_server:5006
+    tls {
+        dns cloudflare ${var.cloudflare_api_token}
+    }
+}
+${var.mealie_subdomain} {
+    encode gzip zstd
+    reverse_proxy mealie:9000
     tls {
         dns cloudflare ${var.cloudflare_api_token}
     }
@@ -194,6 +202,36 @@ ENDCADDY
         [Install]
         WantedBy=multi-user.target
         EOT6
+    },
+    {
+      path        = "/etc/systemd/system/mealie.service"
+      permissions = "0644"
+      owner       = "root"
+      content     = <<-EOT7
+        [Unit]
+        Description=Start Mealie
+        After=network-online.target docker.service caddy.service
+        Requires=docker.service caddy.service
+        RequiresMountsFor=/mnt/disks/data
+
+        [Service]
+        ExecStart=/usr/bin/docker run --rm \
+          --network custom-bridge \
+          --mount 'type=bind,source=/mnt/disks/data/mealie-data,target=/app/data' \
+          --name=mealie \
+          -e TZ="${var.mealie_config.timezone}" \
+          -e BASE_URL="${var.mealie_subdomain}" \
+          ghcr.io/mealie-recipes/mealie:${var.mealie_image_version_tag}
+
+        ExecStop=/usr/bin/docker stop mealie
+        ExecStopPost=/usr/bin/docker rm mealie
+        Restart=unless-stopped
+        TimeoutStartSec=0
+        TimeoutStopSec=5
+
+        [Install]
+        WantedBy=multi-user.target
+        EOT7
     }
   ]
 
@@ -208,10 +246,12 @@ ENDCADDY
     "systemctl daemon-reload",
     "systemctl enable caddy.service",
     "systemctl enable actual.service",
+    "systemctl enable mealie.service",
     "systemctl enable actual-auto-sync.service",
     "systemctl enable actual-tasks.service",
     "systemctl start caddy.service",
     "systemctl start actual.service",
+    "systemctl start mealie.service",
     "systemctl start actual-auto-sync.service",
     "systemctl start actual-tasks.service"
   ]

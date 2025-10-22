@@ -93,6 +93,11 @@ jobs:
           log_level       = "info"
           run_on_start    = true
         }
+        mealie_subdomain         = "${{ vars.MEALIE_SUBDOMAIN }}"
+        mealie_image_version_tag = "${{ vars.MEALIE_VERSION }}"
+        mealie_config = {
+          timezone = "${{ vars.MEALIE_TIME_ZONE }}"
+        }
         EOL
 
     - name: Terraform Init
