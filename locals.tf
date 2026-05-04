@@ -10,27 +10,37 @@ locals {
           set -e
           DATA_DISK="/dev/disk/by-id/google-container_host_data_disk_0"
           MOUNT_DIR="/mnt/disks/data"
+          PARENT_DIR="/mnt/disks"
           
-          # Wait for device availability (GCP attaches disks asynchronously)
+          # 1. PREVENT RAM OVERFLOW:
+          mkdir -p $MOUNT_DIR
+          chmod 555 $PARENT_DIR  # Now Docker can't create "fake" folders here if sdb is missing
+          
           while [ ! -b $DATA_DISK ]; do sleep 1; done
 
           if ! blkid $DATA_DISK; then
             mkfs.ext4 -m 0 -F -E lazy_itable_init=0,lazy_journal_init=0,discard $DATA_DISK
           fi
           
-          mkdir -p $MOUNT_DIR
+          # 2. MOUNT SECURELY
           mount -o discard,defaults $DATA_DISK $MOUNT_DIR || true
           
-          mkdir -p "$MOUNT_DIR/dockge" "$MOUNT_DIR/stacks"
-          chown -R root:root $MOUNT_DIR
-
+          # 3. DIRECTORY PREP
+          if mountpoint -q $MOUNT_DIR; then
+             mkdir -p "$MOUNT_DIR/dockge" "$MOUNT_DIR/stacks" "$MOUNT_DIR/rclone-config"
+             chown -R root:root $MOUNT_DIR
+             touch "$MOUNT_DIR/THIS_IS_THE_REAL_DISK"
+          else
+             echo "ERROR: Disk failed to mount! Preventing Docker writes."
+             exit 1
+          fi
       - path: /etc/systemd/system/dockge.service
         permissions: "0644"
         owner: root
         content: |
           [Unit]
           Description=Dockge
-          After=network-online.target docker.service
+          After=network-online.target docker.service local-fs.target
           Requires=docker.service
           RequiresMountsFor=/mnt/disks/data
 
