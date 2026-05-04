@@ -12,8 +12,10 @@ locals {
 
           mkdir -p $MOUNT_DIR || true
 
+          echo "Waiting for disk to appear..."
           for i in {1..30}; do
-            if [ -b "$DATA_DISK" ]; then
+            if [ -b "/dev/disk/by-id/google-container_host_data_disk_0" ]; then
+              echo "Disk found!"
               break
             fi
             sleep 1
