@@ -64,6 +64,9 @@ write_files:
       Restart=always
       RestartSec=5
 
+      [Install]
+      WantedBy=multi-user.target
+
 runcmd:
   - docker network create custom-bridge || true
   - bash /var/lib/cloud/scripts/per-boot/fs-prepare.sh
