@@ -49,14 +49,14 @@ locals {
         Description=Dockge - Docker Compose manager
         After=network-online.target docker.service
         Requires=docker.service
-        RequiresMountsFor=/data
+        RequiresMountsFor=/mnt/disks/data
 
         [Service]
         ExecStart=/usr/bin/docker run --rm \
           --name dockge \
           -v /var/run/docker.sock:/var/run/docker.sock \
-          -v /data/dockge:/app/data \
-          -v /data/stacks:/opt/stacks \
+          -v /mnt/disks/data/dockge:/app/data \
+          -v /mnt/disks/data/stacks:/opt/stacks \
           -p 127.0.0.1:5001:5001 \
           -e DOCKGE_STACKS_DIR=/opt/stacks \
           louislam/dockge:latest
