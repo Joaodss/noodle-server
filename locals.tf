@@ -6,27 +6,34 @@ locals {
         owner: root
         content: |
           #!/bin/bash
-          set -e
           DATA_DISK="/dev/disk/by-id/google-container_host_data_disk_0"
           MOUNT_DIR="/mnt/disks/data"
           PARENT_DIR="/mnt/disks"
-          
-          mkdir -p $MOUNT_DIR
-          chmod 555 $PARENT_DIR
-          
-          while [ ! -b $DATA_DISK ]; do sleep 1; done
-          
+
+          mkdir -p $MOUNT_DIR || true
+
+          for i in {1..30}; do
+            if [ -b "$DATA_DISK" ]; then
+              break
+            fi
+            sleep 1
+          done
+
           if ! blkid $DATA_DISK; then
             mkfs.ext4 -m 0 -F -E lazy_itable_init=0,lazy_journal_init=0,discard $DATA_DISK
           fi
-          
-          mount -o discard,defaults $DATA_DISK $MOUNT_DIR || true
-          
+
+          if ! mountpoint -q $MOUNT_DIR; then
+            mount -o discard,defaults $DATA_DISK $MOUNT_DIR || echo "Mount failed"
+          fi
+
           if mountpoint -q $MOUNT_DIR; then
-             chown -R root:root $MOUNT_DIR
-          else
-             echo "ERROR: Disk failed to mount! Preventing Docker writes."
-             exit 1
+            chmod 555 $PARENT_DIR  
+            mkdir -p "$MOUNT_DIR/dockge" "$MOUNT_DIR/stacks"
+            chown -R root:root $MOUNT_DIR
+          else  
+            chmod 555 $PARENT_DIR
+            exit 1
           fi
       
       - path: /etc/systemd/system/dockge.service
