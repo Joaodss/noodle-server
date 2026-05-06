@@ -39,7 +39,7 @@ write_files:
         exit 1
       fi
 
-- path: /etc/systemd/system/docker.service.d/override.conf
+  - path: /etc/systemd/system/docker.service.d/override.conf
     permissions: "0644"
     owner: root
     content: |
