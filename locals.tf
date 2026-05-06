@@ -34,11 +34,12 @@ write_files:
         chmod 555 $PARENT_DIR  
         mkdir -p "$MOUNT_DIR/dockge" "$MOUNT_DIR/stacks"
         chown -R root:root $MOUNT_DIR
+        systemctl restart docker # Force docker to see the mounted disk properly
       else  
         chmod 555 $PARENT_DIR
         exit 1
       fi
-  
+
   - path: /etc/systemd/system/dockge.service
     permissions: "0644"
     owner: root
