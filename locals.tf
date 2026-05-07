@@ -1,43 +1,23 @@
 locals {
   cloud_config = <<-EOT
 #cloud-config
-write_files:      
-  - path: /var/lib/cloud/scripts/per-boot/fs-prepare.sh
-    permissions: "0544"
+
+write_files:
+  - path: /etc/systemd/system/mnt-disks-data.mount
+    permissions: "0644"
     owner: root
     content: |
-      #!/bin/bash
-      DATA_DISK="/dev/disk/by-id/google-container_host_data_disk_0"
-      MOUNT_DIR="/mnt/disks/data"
-      PARENT_DIR="/mnt/disks"
-
-      mkdir -p $MOUNT_DIR || true
-
-      echo "Waiting for disk to appear..."
-      for i in {1..30}; do
-        if [ -b "$DATA_DISK" ]; then
-          echo "Disk found!"
-          break
-        fi
-        sleep 1
-      done
-
-      if ! blkid $DATA_DISK; then
-        mkfs.ext4 -m 0 -F -E lazy_itable_init=0,lazy_journal_init=0,discard $DATA_DISK
-      fi
-
-      if ! mountpoint -q $MOUNT_DIR; then
-        mount -o discard,defaults $DATA_DISK $MOUNT_DIR || echo "Mount failed"
-      fi
-
-      if mountpoint -q $MOUNT_DIR; then
-        chmod 555 $PARENT_DIR  
-        mkdir -p "$MOUNT_DIR/dockge" "$MOUNT_DIR/stacks"
-        chown -R root:root $MOUNT_DIR
-      else  
-        chmod 555 $PARENT_DIR
-        exit 1
-      fi
+      [Unit]
+      Description=Persistent data disk
+      After=systemd-udev-settle.service
+      Wants=systemd-udev-settle.service
+      [Mount]
+      What=/dev/disk/by-id/google-container_host_data_disk_0
+      Where=/mnt/disks/data
+      Type=ext4
+      Options=defaults,nofail,x-systemd.device-timeout=120,umask=0000
+      [Install]
+      WantedBy=multi-user.target
 
   - path: /etc/systemd/system/docker.service.d/override.conf
     permissions: "0644"
@@ -53,10 +33,9 @@ write_files:
     content: |
       [Unit]
       Description=Dockge
-      After=network-online.target docker.service local-fs.target
+      After=network-online.target docker.service mnt-disks-data.mount
       Requires=docker.service
-      RequiresMountsFor=/mnt/disks/data
-
+      Requires=mnt-disks-data.mount
       [Service]
       Type=simple
       ExecStartPre=/usr/bin/docker pull louislam/dockge:latest
@@ -71,16 +50,23 @@ write_files:
       ExecStop=/usr/bin/docker stop dockge
       Restart=always
       RestartSec=5
-
       [Install]
       WantedBy=multi-user.target
 
 runcmd:
-  - docker network create custom-bridge || true
-  - bash /var/lib/cloud/scripts/per-boot/fs-prepare.sh
-  - systemctl daemon-reload
-  - systemctl restart docker
-  - systemctl enable dockge.service
-  - systemctl start dockge.service
+systemctl daemon-reload
+systemctl enable mnt-disks-data.mount
+systemctl enable docker
+systemctl enable dockge.service
+systemctl start mnt-disks-data.mount
+systemctl start docker
+
+until docker info >/dev/null 2>&1 && docker ps >/dev/null 2>&1; do
+  sleep 1
+done
+
+docker network inspect custom-bridge >/dev/null 2>&1 || \
+docker network create custom-bridge
+systemctl start dockge.service
 EOT
 }
