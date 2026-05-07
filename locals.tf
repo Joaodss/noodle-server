@@ -16,7 +16,7 @@ write_files:
       What=/dev/disk/by-id/google-container_host_data_disk_0
       Where=/mnt/disks/data
       Type=ext4
-      Options=defaults,nofail,x-systemd.device-timeout=120,umask=0000,noatime
+      Options=defaults,nofail,x-systemd.device-timeout=120,noatime
 
       [Install]
       WantedBy=multi-user.target
