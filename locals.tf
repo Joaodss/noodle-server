@@ -16,7 +16,7 @@ write_files:
       What=/dev/disk/by-id/google-container_host_data_disk_0
       Where=/mnt/disks/data
       Type=ext4
-      Options=defaults,nofail,x-systemd.device-timeout=120,umask=0000
+      Options=defaults,nofail,x-systemd.device-timeout=120,umask=0000,noatime
 
       [Install]
       WantedBy=multi-user.target
@@ -52,6 +52,7 @@ write_files:
         louislam/dockge:latest
       ExecStop=/usr/bin/docker stop dockge
       Restart=always
+      RestartSec=5
 
       [Install]
       WantedBy=multi-user.target
@@ -59,12 +60,8 @@ write_files:
 runcmd:
   - systemctl daemon-reload
   - mkdir -p /mnt/disks/data
-
   - systemctl enable mnt-disks-data.mount
   - systemctl start mnt-disks-data.mount
-
-  - docker network inspect custom-bridge >/dev/null 2>&1 || docker network create custom-bridge
-
   - systemctl restart docker
   - systemctl enable dockge.service
   - systemctl start dockge.service
