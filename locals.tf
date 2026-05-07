@@ -11,11 +11,13 @@ write_files:
       Description=Persistent data disk
       After=systemd-udev-settle.service
       Wants=systemd-udev-settle.service
+
       [Mount]
       What=/dev/disk/by-id/google-container_host_data_disk_0
       Where=/mnt/disks/data
       Type=ext4
       Options=defaults,nofail,x-systemd.device-timeout=120,umask=0000
+
       [Install]
       WantedBy=multi-user.target
 
@@ -34,10 +36,11 @@ write_files:
       [Unit]
       Description=Dockge
       After=network-online.target docker.service mnt-disks-data.mount
-      Requires=docker.service
-      Requires=mnt-disks-data.mount
+      Requires=docker.service mnt-disks-data.mount
+
       [Service]
       Type=simple
+      ExecStartPre=-/usr/bin/docker network create custom-bridge
       ExecStartPre=/usr/bin/docker pull louislam/dockge:latest
       ExecStart=/usr/bin/docker run --rm --name dockge \
         --network custom-bridge \
@@ -49,24 +52,21 @@ write_files:
         louislam/dockge:latest
       ExecStop=/usr/bin/docker stop dockge
       Restart=always
-      RestartSec=5
+
       [Install]
       WantedBy=multi-user.target
 
 runcmd:
-systemctl daemon-reload
-systemctl enable mnt-disks-data.mount
-systemctl enable docker
-systemctl enable dockge.service
-systemctl start mnt-disks-data.mount
-systemctl start docker
+  - systemctl daemon-reload
+  - mkdir -p /mnt/disks/data
 
-until docker info >/dev/null 2>&1 && docker ps >/dev/null 2>&1; do
-  sleep 1
-done
+  - systemctl enable mnt-disks-data.mount
+  - systemctl start mnt-disks-data.mount
 
-docker network inspect custom-bridge >/dev/null 2>&1 || \
-docker network create custom-bridge
-systemctl start dockge.service
+  - docker network inspect custom-bridge >/dev/null 2>&1 || docker network create custom-bridge
+
+  - systemctl restart docker
+  - systemctl enable dockge.service
+  - systemctl start dockge.service
 EOT
 }
