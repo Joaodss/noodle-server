@@ -32,7 +32,7 @@ write_files:
     owner: root
     content: |
       [Unit]
-      Description=dinghy Docker Compose stack manager
+      Description=Dinghy Docker Compose stack manager
       After=network-online.target docker.service mnt-disks-data.mount
       Requires=docker.service mnt-disks-data.mount
       Wants=network-online.target
