@@ -38,6 +38,9 @@ write_files:
 
       [Service]
       Type=simple
+      # First boot on a fresh boot disk pulls the full image, which takes far
+      # longer than the default 90 s start timeout on an e2-micro.
+      TimeoutStartSec=infinity
       ExecStartPre=-/usr/bin/docker network create custom-bridge
       ExecStartPre=/usr/bin/docker pull louislam/dockge:latest
       ExecStart=/usr/bin/docker run --rm --name dockge \
@@ -132,7 +135,7 @@ write_files:
         docker start "$id" || echo "prepare-data-disk: could not start $id" >&2
       done
       rm -f "$STATE"
-      systemctl start dockge.service
+      systemctl start --no-block dockge.service
 
 runcmd:
   - systemctl daemon-reload
