@@ -3,14 +3,31 @@ locals {
 #cloud-config
 
 write_files:
+  - path: /etc/systemd/system/format-data-disk.service
+    permissions: "0644"
+    owner: root
+    content: |
+      [Unit]
+      Description=Format persistent data disk only if it has no filesystem
+      Requires=dev-disk-by\x2did-google\x2dcontainer_host_data_disk_0.device
+      After=dev-disk-by\x2did-google\x2dcontainer_host_data_disk_0.device
+      Before=mnt-disks-data.mount
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      # blkid -p exits 2 only when the device has no recognisable signature;
+      # any other result (filesystem found, read error) leaves the disk alone.
+      ExecStart=/bin/sh -c 'd=/dev/disk/by-id/google-container_host_data_disk_0; blkid -p "$d" >/dev/null 2>&1; rc=$?; if [ "$rc" -eq 2 ]; then mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard "$d"; fi'
+
   - path: /etc/systemd/system/mnt-disks-data.mount
     permissions: "0644"
     owner: root
     content: |
       [Unit]
       Description=Persistent data disk
-      After=systemd-udev-settle.service
-      Wants=systemd-udev-settle.service
+      Requires=format-data-disk.service
+      After=format-data-disk.service
 
       [Mount]
       What=/dev/disk/by-id/google-container_host_data_disk_0
@@ -77,13 +94,14 @@ write_files:
       WantedBy=multi-user.target
 
 runcmd:
+  - systemctl stop docker.socket docker.service
   - systemctl daemon-reload
   - mkdir -p /mnt/disks/data
   - systemctl enable mnt-disks-data.mount
   - systemctl start mnt-disks-data.mount
   - systemctl enable --now swapfile.service
   - sysctl -w vm.swappiness=10
-  - systemctl restart docker
+  - systemctl start docker.service
   - systemctl enable dockge.service
   - systemctl start dockge.service
 EOT
