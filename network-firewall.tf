@@ -1,4 +1,8 @@
 locals {
+  ssh_allowed_cidrs = [
+    for c in split(",", var.gcp_ssh_allowed_cidrs) : trim(c, "\" ") if trim(c, "\" ") != ""
+  ]
+
   cloudflare_ips = [
     "173.245.48.0/20",
     "103.21.244.0/22",
@@ -62,6 +66,6 @@ resource "google_compute_firewall" "allow_ssh_proxy" {
 
   direction     = "INGRESS"
   target_tags   = ["allow-ssh-proxy"]
-  source_ranges = concat(["35.235.240.0/20"], var.gcp_ssh_allowed_source_ranges)
+  source_ranges = concat(["35.235.240.0/20"], local.ssh_allowed_cidrs)
   priority      = "1000"
 }

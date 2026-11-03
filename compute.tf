@@ -61,10 +61,10 @@ resource "google_compute_instance" "container_host" {
     }
   }
 
-  metadata = {
-    user-data = local.cloud_config
-    ssh-keys  = join("\n", var.gcp_vm_ssh_keys)
-  }
+  metadata = merge(
+    { user-data = local.cloud_config },
+    length(var.gcp_vm_ssh_keys) > 0 ? { ssh-keys = join("\n", var.gcp_vm_ssh_keys) } : {},
+  )
 
   scheduling {
     preemptible        = false
@@ -76,4 +76,37 @@ resource "google_compute_instance" "container_host" {
     email  = google_service_account.container_host.email
     scopes = ["cloud-platform"]
   }
+}
+
+# Daily snapshots of the data disk: the real safety net for everything on it.
+resource "google_compute_resource_policy" "data_disk_snapshots" {
+  name   = "data-disk-daily-snapshots"
+  region = var.gcp_project_region
+
+  snapshot_schedule_policy {
+    schedule {
+      daily_schedule {
+        days_in_cycle = 1
+        start_time    = "03:00"
+      }
+    }
+
+    retention_policy {
+      max_retention_days    = 7
+      on_source_disk_delete = "KEEP_AUTO_SNAPSHOTS"
+    }
+
+    snapshot_properties {
+      storage_locations = [var.gcp_project_region]
+      labels = {
+        managed_by = "terraform"
+      }
+    }
+  }
+}
+
+resource "google_compute_disk_resource_policy_attachment" "data_disk_snapshots" {
+  name = google_compute_resource_policy.data_disk_snapshots.name
+  disk = google_compute_disk.container_host_data_disk.name
+  zone = var.gcp_project_zone
 }

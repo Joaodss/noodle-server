@@ -31,6 +31,8 @@ jobs:
         echo '${{ secrets.GOOGLE_CREDENTIALS }}' > application_default_credentials.json
 
     - name: Create sensitive.auto.tfvars
+      env:
+        SSH_ALLOWED_CIDRS: ${{ secrets.SSH_ALLOWED_RANGES }}
       run: |
         cat > sensitive.auto.tfvars <<EOL
         gcp_project                        = "${{ secrets.GCP_PROJECT }}"
@@ -42,8 +44,8 @@ jobs:
         gcp_billing_alert_amount           = "${{ vars.GCP_BILLING_AMOUNT }}"
         access_credentials                 = "./application_default_credentials.json"
         cloudflare_api_token               = "${{ secrets.CLOUDFLARE_API_TOKEN }}"
-        gcp_ssh_allowed_source_ranges      = [${{ secrets.SSH_ALLOWED_RANGES }}]
         EOL
+        printf 'gcp_ssh_allowed_cidrs = "%s"\n' "$(printf '%s' "$SSH_ALLOWED_CIDRS" | tr -d '"')" >> sensitive.auto.tfvars
 
     - name: Terraform Init
       run: terraform init

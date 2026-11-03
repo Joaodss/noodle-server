@@ -3,31 +3,12 @@ locals {
 #cloud-config
 
 write_files:
-  - path: /etc/systemd/system/format-data-disk.service
-    permissions: "0644"
-    owner: root
-    content: |
-      [Unit]
-      Description=Format persistent data disk only if it has no filesystem
-      Requires=dev-disk-by\x2did-google\x2dcontainer_host_data_disk_0.device
-      After=dev-disk-by\x2did-google\x2dcontainer_host_data_disk_0.device
-      Before=mnt-disks-data.mount
-
-      [Service]
-      Type=oneshot
-      RemainAfterExit=yes
-      # blkid -p exits 2 only when the device has no recognisable signature;
-      # any other result (filesystem found, read error) leaves the disk alone.
-      ExecStart=/bin/sh -c 'd=/dev/disk/by-id/google-container_host_data_disk_0; blkid -p "$d" >/dev/null 2>&1; rc=$?; if [ "$rc" -eq 2 ]; then mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard "$d"; fi'
-
   - path: /etc/systemd/system/mnt-disks-data.mount
     permissions: "0644"
     owner: root
     content: |
       [Unit]
       Description=Persistent data disk
-      Requires=format-data-disk.service
-      After=format-data-disk.service
 
       [Mount]
       What=/dev/disk/by-id/google-container_host_data_disk_0
@@ -87,25 +68,75 @@ write_files:
       [Service]
       Type=oneshot
       RemainAfterExit=yes
-      ExecStart=/bin/sh -c 'f=/mnt/disks/data/swapfile; [ -f "$f" ] || { fallocate -l 1G "$f" && chmod 600 "$f" && mkswap "$f"; }; swapon "$f"'
+      ExecStart=/bin/sh /etc/noodle/setup-swap.sh
       ExecStop=/bin/sh -c 'swapoff /mnt/disks/data/swapfile'
 
       [Install]
       WantedBy=multi-user.target
 
+  - path: /etc/noodle/setup-swap.sh
+    permissions: "0755"
+    owner: root
+    content: |
+      #!/bin/sh
+      # 1G swap file on the persistent disk. Recreated if it exists without a
+      # valid swap signature (e.g. a crash between fallocate and mkswap).
+      set -eu
+      f=/mnt/disks/data/swapfile
+      if ! blkid -p -s TYPE -o value "$f" 2>/dev/null | grep -qx swap; then
+        rm -f "$f"
+        fallocate -l 1G "$f"
+        chmod 600 "$f"
+        mkswap "$f"
+      fi
+      grep -qs "^$f " /proc/swaps || swapon "$f"
+
+  - path: /etc/noodle/prepare-data-disk.sh
+    permissions: "0755"
+    owner: root
+    content: |
+      #!/bin/sh
+      # Runs from cloud-init on every boot. Docker starts before cloud-init and
+      # runs with live-restore, so containers started early bind-mount the empty
+      # placeholder /mnt/disks/data and keep it. Stop them, mount the real disk,
+      # and start them again only if the real disk is confirmed. Otherwise leave
+      # every container stopped.
+      set -u
+      DATA=/mnt/disks/data
+      MARKER="$DATA/THIS_IS_THE_REAL_DISK"
+      # Kept on the boot disk so a failed boot does not forget which containers
+      # it stopped (docker treats them as manually stopped afterwards).
+      STATE=/var/lib/noodle/stopped-containers
+
+      mkdir -p /var/lib/noodle "$DATA"
+
+      docker ps -q >> "$STATE"
+      ids=$(sort -u "$STATE" | tr '\n' ' ')
+      if [ -n "$(docker ps -q)" ]; then
+        echo "prepare-data-disk: stopping containers started before the data disk"
+        docker ps -q | xargs -r docker stop
+      fi
+
+      systemctl start mnt-disks-data.mount
+
+      if ! grep -qs " $DATA ext4 " /proc/mounts || [ ! -e "$MARKER" ]; then
+        echo "prepare-data-disk: $DATA is not the real data disk, containers stay stopped" >&2
+        docker ps -q | xargs -r docker stop
+        exit 1
+      fi
+
+      systemctl start swapfile.service || echo "prepare-data-disk: swap setup failed" >&2
+      sysctl -w vm.swappiness=10
+
+      for id in $ids; do
+        docker start "$id" || echo "prepare-data-disk: could not start $id" >&2
+      done
+      rm -f "$STATE"
+      systemctl start dockge.service
+
 runcmd:
-  - systemctl stop docker.socket docker.service
   - systemctl daemon-reload
-  - mkdir -p /mnt/disks/data
-  - systemctl enable mnt-disks-data.mount
-  - systemctl start mnt-disks-data.mount
-  - systemctl enable --now swapfile.service
-  - sysctl -w vm.swappiness=10
-  - systemctl start docker.service
-  # Docker on COS runs with live-restore, so containers started before the
-  # data disk was mounted keep the empty placeholder dir. Restart them all.
-  - sh -c 'docker ps -q | xargs -r docker restart'
-  - systemctl enable dockge.service
-  - systemctl start dockge.service
+  - systemctl enable mnt-disks-data.mount swapfile.service dockge.service
+  - sh /etc/noodle/prepare-data-disk.sh
 EOT
 }
