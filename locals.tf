@@ -27,28 +27,41 @@ write_files:
       Requires=mnt-disks-data.mount
       After=mnt-disks-data.mount
 
-  - path: /etc/systemd/system/dockge.service
+  - path: /etc/systemd/system/dinghy.service
     permissions: "0644"
     owner: root
     content: |
       [Unit]
-      Description=Dockge
+      Description=Dinghy Docker Compose stack manager
       After=network-online.target docker.service mnt-disks-data.mount
       Requires=docker.service mnt-disks-data.mount
+      Wants=network-online.target
 
       [Service]
       Type=simple
+      # First boot on a fresh boot disk pulls the image, which can take longer
+      # than the default 90 s start timeout on an e2-micro.
+      TimeoutStartSec=infinity
       ExecStartPre=-/usr/bin/docker network create custom-bridge
-      ExecStartPre=/usr/bin/docker pull louislam/dockge:latest
-      ExecStart=/usr/bin/docker run --rm --name dockge \
+      ExecStartPre=-/usr/bin/docker rm -f dinghy
+      ExecStartPre=/usr/bin/docker pull ghcr.io/joaodss/dinghy:0.1.0
+      # 412 = group of /var/run/docker.sock on COS (stat -c %g); systemd does
+      # not run $(...). Secrets live on the data disk, outside the stacks dir,
+      # so dinghy does not list or stop itself.
+      ExecStart=/usr/bin/docker run --rm --name dinghy \
         --network custom-bridge \
+        --read-only --tmpfs /tmp \
+        --cap-drop ALL --security-opt no-new-privileges \
+        --memory 64m \
+        --group-add 412 \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        -v /mnt/disks/data/dockge:/app/data \
-        -v /mnt/disks/data/stacks:/opt/stacks \
-        -p 127.0.0.1:5001:5001 \
-        -e DOCKGE_STACKS_DIR=/opt/stacks \
-        louislam/dockge:latest
-      ExecStop=/usr/bin/docker stop dockge
+        -v /mnt/disks/data/stacks:/mnt/disks/data/stacks \
+        -v /mnt/disks/data/scripts:/mnt/disks/data/scripts \
+        -e DINGHY_STACKS_DIR=/mnt/disks/data/stacks \
+        -e DINGHY_FILE_ROOTS=stacks=/mnt/disks/data/stacks,scripts=/mnt/disks/data/scripts \
+        --env-file /mnt/disks/data/dinghy/dinghy.env \
+        ghcr.io/joaodss/dinghy:0.1.0
+      ExecStop=/usr/bin/docker stop -t 10 dinghy
       Restart=always
       RestartSec=5
 
@@ -132,11 +145,11 @@ write_files:
         docker start "$id" || echo "prepare-data-disk: could not start $id" >&2
       done
       rm -f "$STATE"
-      systemctl start dockge.service
+      systemctl start --no-block dinghy.service
 
 runcmd:
   - systemctl daemon-reload
-  - systemctl enable mnt-disks-data.mount swapfile.service dockge.service
+  - systemctl enable mnt-disks-data.mount swapfile.service dinghy.service
   - sh /etc/noodle/prepare-data-disk.sh
 EOT
 }
