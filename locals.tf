@@ -102,6 +102,9 @@ runcmd:
   - systemctl enable --now swapfile.service
   - sysctl -w vm.swappiness=10
   - systemctl start docker.service
+  # Docker on COS runs with live-restore, so containers started before the
+  # data disk was mounted keep the empty placeholder dir. Restart them all.
+  - sh -c 'docker ps -q | xargs -r docker restart'
   - systemctl enable dockge.service
   - systemctl start dockge.service
 EOT
