@@ -57,11 +57,32 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
+  - path: /etc/systemd/system/swapfile.service
+    permissions: "0644"
+    owner: root
+    content: |
+      [Unit]
+      Description=Swapfile on persistent data disk
+      Requires=mnt-disks-data.mount
+      After=mnt-disks-data.mount
+      Before=docker.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/bin/sh -c 'f=/mnt/disks/data/swapfile; [ -f "$f" ] || { fallocate -l 1G "$f" && chmod 600 "$f" && mkswap "$f"; }; swapon "$f"'
+      ExecStop=/bin/sh -c 'swapoff /mnt/disks/data/swapfile'
+
+      [Install]
+      WantedBy=multi-user.target
+
 runcmd:
   - systemctl daemon-reload
   - mkdir -p /mnt/disks/data
   - systemctl enable mnt-disks-data.mount
   - systemctl start mnt-disks-data.mount
+  - systemctl enable --now swapfile.service
+  - sysctl -w vm.swappiness=10
   - systemctl restart docker
   - systemctl enable dockge.service
   - systemctl start dockge.service

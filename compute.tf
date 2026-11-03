@@ -59,6 +59,7 @@ resource "google_compute_instance" "container_host" {
 
   metadata = {
     user-data = local.cloud_config
+    ssh-keys  = join("\n", var.gcp_vm_ssh_keys)
   }
 
   scheduling {

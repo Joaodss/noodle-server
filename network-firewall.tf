@@ -52,7 +52,7 @@ resource "google_compute_firewall" "allow_https_udp" {
 
 resource "google_compute_firewall" "allow_ssh_proxy" {
   name        = "allow-ssh-proxy"
-  description = "Allows SSH from Google's Identity Aware Proxy (IAP)"
+  description = "Allows SSH from Google's Identity Aware Proxy (IAP) and allow-listed IPs"
   network     = google_compute_network.vpc_network.name
 
   allow {
@@ -62,6 +62,6 @@ resource "google_compute_firewall" "allow_ssh_proxy" {
 
   direction     = "INGRESS"
   target_tags   = ["allow-ssh-proxy"]
-  source_ranges = ["35.235.240.0/20"]
+  source_ranges = concat(["35.235.240.0/20"], var.gcp_ssh_allowed_source_ranges)
   priority      = "1000"
 }

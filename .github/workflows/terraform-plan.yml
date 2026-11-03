@@ -42,6 +42,7 @@ jobs:
         gcp_billing_alert_amount           = "${{ vars.GCP_BILLING_AMOUNT }}"
         access_credentials                 = "./application_default_credentials.json"
         cloudflare_api_token               = "${{ secrets.CLOUDFLARE_API_TOKEN }}"
+        gcp_ssh_allowed_source_ranges      = [${{ secrets.SSH_ALLOWED_RANGES }}]
         EOL
 
     - name: Terraform Init
