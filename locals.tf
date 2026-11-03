@@ -144,6 +144,22 @@ write_files:
       for id in $ids; do
         docker start "$id" || echo "prepare-data-disk: could not start $id" >&2
       done
+
+      # Containers that failed to start in the early window (e.g. a single-file
+      # bind mount whose source did not exist yet on the placeholder) are not
+      # running, so they are not in $ids. Start the ones with a restart policy
+      # that exited during this boot; containers stopped before the boot are
+      # left alone.
+      boot=$(awk '/^btime/ {print $2}' /proc/stat)
+      for id in $(docker ps -aq --filter status=exited); do
+        policy=$(docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' "$id")
+        case "$policy" in always|unless-stopped) ;; *) continue ;; esac
+        finished=$(date -d "$(docker inspect -f '{{.State.FinishedAt}}' "$id")" +%s 2>/dev/null || echo 0)
+        if [ "$finished" -ge "$boot" ]; then
+          echo "prepare-data-disk: starting $id, it failed before the data disk was mounted"
+          docker start "$id" || echo "prepare-data-disk: could not start $id" >&2
+        fi
+      done
       rm -f "$STATE"
       systemctl start --no-block dinghy.service
 
