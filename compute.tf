@@ -22,6 +22,10 @@ resource "google_compute_disk" "container_host_data_disk" {
     managed_by = "terraform"
   }
   physical_block_size_bytes = 4096
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "google_compute_address" "static_ip" {
@@ -57,9 +61,10 @@ resource "google_compute_instance" "container_host" {
     }
   }
 
-  metadata = {
-    user-data = local.cloud_config
-  }
+  metadata = merge(
+    { user-data = local.cloud_config },
+    length(var.gcp_vm_ssh_keys) > 0 ? { ssh-keys = join("\n", var.gcp_vm_ssh_keys) } : {},
+  )
 
   scheduling {
     preemptible        = false

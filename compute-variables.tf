@@ -17,3 +17,9 @@ variable "gcp_container_host_network_tags" {
   type        = list(string)
   description = "List of network tags to add for firewall rules"
 }
+
+variable "gcp_vm_ssh_keys" {
+  type        = list(string)
+  description = "SSH public keys for the VM, each as \"<user>:<public key>\". Public keys only."
+  default     = []
+}

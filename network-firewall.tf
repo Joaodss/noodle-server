@@ -1,4 +1,8 @@
 locals {
+  ssh_allowed_cidrs = [
+    for c in split(",", var.gcp_ssh_allowed_cidrs) : trim(c, "\" ") if trim(c, "\" ") != ""
+  ]
+
   cloudflare_ips = [
     "173.245.48.0/20",
     "103.21.244.0/22",
@@ -52,7 +56,7 @@ resource "google_compute_firewall" "allow_https_udp" {
 
 resource "google_compute_firewall" "allow_ssh_proxy" {
   name        = "allow-ssh-proxy"
-  description = "Allows SSH from Google's Identity Aware Proxy (IAP)"
+  description = "Allows SSH from Google's Identity Aware Proxy (IAP) and allow-listed IPs"
   network     = google_compute_network.vpc_network.name
 
   allow {
@@ -62,6 +66,6 @@ resource "google_compute_firewall" "allow_ssh_proxy" {
 
   direction     = "INGRESS"
   target_tags   = ["allow-ssh-proxy"]
-  source_ranges = ["35.235.240.0/20"]
+  source_ranges = concat(["35.235.240.0/20"], local.ssh_allowed_cidrs)
   priority      = "1000"
 }

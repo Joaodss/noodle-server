@@ -9,3 +9,6 @@ gcp_project_enabled_services = [
   "iam.googleapis.com",
   "networkmanagement.googleapis.com"
 ]
+gcp_vm_ssh_keys = [
+  "claude:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1FPCLff+D+RjPGZzLgkhY22xPCY7fi5BLqXi3GcPfA claude",
+]
